@@ -1,17 +1,17 @@
-import React, { useState } from "react"; // 1. Importar useState
+import React from "react";
 import styled, { keyframes } from "styled-components";
 import Header from "./Header.jsx";
 import MessageList from "./MessageList.jsx";
 import MessageInput from "./MessageInput.jsx";
+import { useSocket } from "../contexts/SocketContext.jsx";
 
-// Animação para o fundo líquido (sem alteração)
+// ...existing code...
 const moveGradient = keyframes`
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 `;
 
-// Estilização do ChatWrapper (sem alteração)
 const ChatWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -28,33 +28,28 @@ const ChatWrapper = styled.div`
   animation: ${moveGradient} 15s ease infinite;
 `;
 
-// DADOS INICIAIS DAS MENSAGENS
-const initialMessages = [
-  { text: "E aí, tudo certo?", sent: false },
-  { text: "Opa, tudo joia! Gostou do novo fundo líquido?", sent: true },
-  { text: "Nossa, ficou sensacional! Parece vivo.", sent: false },
-];
+const ConnectionStatus = styled.div`
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: ${props => props.isConnected ? '#4CAF50' : '#f44336'};
+  background: rgba(0, 0, 0, 0.2);
+`;
 
 function ModernChatContainer() {
-  // 2. Criar o estado para as mensagens
-  const [messages, setMessages] = useState(initialMessages);
+  const { messages, isConnected, sendMessage } = useSocket();
 
-  // 3. Criar a função que adiciona uma nova mensagem
   const handleSendMessage = (text) => {
-    const newMessage = {
-      text: text,
-      sent: true, // Todas as novas mensagens são enviadas pelo usuário
-    };
-    // Atualiza o estado, adicionando a nova mensagem à lista existente
-    setMessages([...messages, newMessage]);
+    sendMessage(text);
   };
 
   return (
     <ChatWrapper>
       <Header />
-      {/* 4. Passar a lista de mensagens para o MessageList */}
+      <ConnectionStatus isConnected={isConnected}>
+        {isConnected ? '🟢 Conectado' : '🔴 Conectando...'}
+      </ConnectionStatus>
       <MessageList messages={messages} />
-      {/* 5. Passar a função de envio para o MessageInput */}
       <MessageInput onSendMessage={handleSendMessage} />
     </ChatWrapper>
   );
