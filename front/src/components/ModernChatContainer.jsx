@@ -5,7 +5,6 @@ import MessageList from "./MessageList.jsx";
 import MessageInput from "./MessageInput.jsx";
 import { useSocket } from "../contexts/SocketContext.jsx";
 
-// ...existing code...
 const moveGradient = keyframes`
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -32,7 +31,7 @@ const ConnectionStatus = styled.div`
   padding: 10px;
   text-align: center;
   font-size: 0.9rem;
-  color: ${props => props.isConnected ? '#4CAF50' : '#f44336'};
+  color: ${(props) => (props.isConnected ? "#4CAF50" : "#f44336")};
   background: rgba(0, 0, 0, 0.2);
 `;
 
@@ -47,7 +46,7 @@ function ModernChatContainer() {
     <ChatWrapper>
       <Header />
       <ConnectionStatus isConnected={isConnected}>
-        {isConnected ? '🟢 Conectado' : '🔴 Conectando...'}
+        {isConnected ? "🟢 Conectado" : "🔴 Conectando..."}
       </ConnectionStatus>
       <MessageList messages={messages} />
       <MessageInput onSendMessage={handleSendMessage} />

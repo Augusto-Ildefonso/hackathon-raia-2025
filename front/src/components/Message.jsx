@@ -38,15 +38,15 @@ const StatusBadge = styled.span`
   font-size: 0.8rem;
   font-weight: bold;
   margin-bottom: 8px;
-  background: ${props => props.isTrue ? '#4CAF50' : '#f44336'};
+  background: ${(props) => (props.isTrue ? "#4CAF50" : "#f44336")};
   color: white;
 `;
 
 const InfoSection = styled.div`
   margin-bottom: 8px;
-  
+
   strong {
-    color: #FFD700;
+    color: #ffd700;
     display: block;
     margin-bottom: 4px;
   }
@@ -56,41 +56,47 @@ function Message({ text, sent }) {
   // Função para formatar a mensagem estruturada
   const formatStructuredMessage = (text) => {
     // Detecta se é uma mensagem do sistema (começa com ✅ ou ❌)
-    const isSystemMessage = text.startsWith('✅') || text.startsWith('❌');
-    
+    const isSystemMessage = text.startsWith("✅") || text.startsWith("❌");
+
     if (!isSystemMessage) {
       return { isStructured: false, content: text };
     }
 
-    const isVeridico = text.startsWith('✅');
-    
+    const isVeridico = text.startsWith("✅");
+
     // Remove o emoji inicial
-    const cleanText = text.replace(/^[✅❌]\s*/, '');
-    
+    const cleanText = text.replace(/^[✅❌]\s*/, "");
+
     // Extrai informações usando regex melhorada
     const chanceMatch = cleanText.match(/Chance de ser real: '(\d+)%'/);
-    
+
     // Regex mais específica para capturar todo o resumo até o link
-    const resumoMatch = cleanText.match(/Resumo da notícia: (.*?)(?=\n\([^)]+\)|$)/s);
-    
+    const resumoMatch = cleanText.match(
+      /Resumo da notícia: (.*?)(?=\n\([^)]+\)|$)/s
+    );
+
     // Se não encontrou com a regex acima, tenta uma alternativa
-    const resumoAlternativo = cleanText.match(/Resumo da notícia: (.*?)(?=\([^)]+\)|$)/s);
-    
+    const resumoAlternativo = cleanText.match(
+      /Resumo da notícia: (.*?)(?=\([^)]+\)|$)/s
+    );
+
     const linkMatch = cleanText.match(/\[([^\]]+)\]\(([^)]+)\)/);
 
     // Escolhe o melhor match para o resumo
-    let resumo = '';
+    let resumo = "";
     if (resumoMatch && resumoMatch[1]) {
       resumo = resumoMatch[1].trim();
     } else if (resumoAlternativo && resumoAlternativo[1]) {
       resumo = resumoAlternativo[1].trim();
     } else {
       // Se não conseguiu extrair o resumo, pega tudo após "Resumo da notícia:"
-      const resumoIndex = cleanText.indexOf('Resumo da notícia:');
+      const resumoIndex = cleanText.indexOf("Resumo da notícia:");
       if (resumoIndex !== -1) {
-        resumo = cleanText.substring(resumoIndex + 'Resumo da notícia:'.length).trim();
+        resumo = cleanText
+          .substring(resumoIndex + "Resumo da notícia:".length)
+          .trim();
         // Remove o link se estiver no final
-        resumo = resumo.replace(/\([^)]+\)\s*$/g, '').trim();
+        resumo = resumo.replace(/\([^)]+\)\s*$/g, "").trim();
       } else {
         resumo = cleanText;
       }
@@ -101,7 +107,7 @@ function Message({ text, sent }) {
       isVeridico,
       chance: chanceMatch ? chanceMatch[1] : null,
       resumo: resumo,
-      link: linkMatch ? { text: linkMatch[1], url: linkMatch[2] } : null
+      link: linkMatch ? { text: linkMatch[1], url: linkMatch[2] } : null,
     };
   };
 
@@ -128,29 +134,29 @@ function Message({ text, sent }) {
         {messageData.isStructured ? (
           <div>
             <StatusBadge isTrue={messageData.isVeridico}>
-              {messageData.isVeridico ? '✅ VERIFICADO' : '❌ FAKE NEWS'}
+              {messageData.isVeridico ? "✅ VERIFICADO" : "❌ FAKE NEWS"}
             </StatusBadge>
-            
+
             {messageData.chance && (
               <InfoSection>
                 <strong>Probabilidade de ser real:</strong>
                 {messageData.chance}%
               </InfoSection>
             )}
-            
+
             <InfoSection>
               <strong>Resumo:</strong>
               {messageData.resumo}
             </InfoSection>
-            
+
             {messageData.link && (
               <InfoSection>
                 <strong>Fonte:</strong>
-                <a 
-                  href={messageData.link.url} 
-                  target="_blank" 
+                <a
+                  href={messageData.link.url}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: '#FFD700', textDecoration: 'underline' }}
+                  style={{ color: "#FFD700", textDecoration: "underline" }}
                 >
                   {messageData.link.text}
                 </a>

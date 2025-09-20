@@ -22,7 +22,6 @@ const UserInfo = styled.div`
   gap: 15px;
 `;
 
-// Não precisamos mais do <Avatar> de imagem, apenas do placeholder
 const AvatarPlaceholder = styled.div`
   width: 45px;
   height: 45px;
@@ -49,19 +48,16 @@ const Actions = styled.div`
   }
 `;
 
-// O componente agora não recebe mais nenhuma propriedade (props)
 function Header() {
   return (
     <HeaderWrapper>
       <UserInfo>
         <FiChevronLeft size={28} />
 
-        {/* Mostra sempre o ícone de avatar genérico */}
         <AvatarPlaceholder>
           <FaUserCircle />
         </AvatarPlaceholder>
 
-        {/* Mostra sempre um nome de usuário fixo */}
         <UserName>Usuário</UserName>
       </UserInfo>
       <Actions>
