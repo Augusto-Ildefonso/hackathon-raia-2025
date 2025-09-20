@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
 from openai import OpenAI
+from scrapper import extrair_tags_article
 import os
 import json
 import logging
 
-PROMPT = {"role": "system", "content": '''
+# Define the base system prompt. This should NOT be modified globally.
+BASE_SYSTEM_PROMPT = """
 Você é um especialista em detecção de notícias falsas, com extenso conhecimento em diversas áreas, como política,
 medicina, automóveis, vacinas, etc. Você vai receber notícias dos mais diversos ambitos e sua função é analisa-las
 e baseadas em outras notícias de outras fontes que você terá que pesquisar, você irá me fazer as seguintes coisas:
@@ -16,75 +18,116 @@ faça um resumo com as principais informações da notícia
 é enviésada.
 5) Termine sua prompt ou com a palavra verdadeiro, caso a noticia, provavelmente, não seja veridica ou com a palavra falso, caso ela seja,
 provavelmente, fake news.
-
+6) Não escreva com sintáxe de markdown. Então nada de tentar enfâse com '**', ou coisas similares.
+IMPORTANTE: Sua resposta DEVE ser um objeto JSON válido com a seguinte estrutura:
+{
+  "lineuzinho": "Sua análise completa da notícia aqui, seguindo os pontos 1, 2, 3 e 4.",
+  "veridico": true // ou false. Use 'true' se a notícia for provavelmente VERDADEIRA (não é fake news). Use 'false' se a notícia for provavelmente FALSA (é fake news).
+}
 A mensagem segue abaixo:
-'''}
+"""
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class OpenAiManager:
     def __init__(self):
-        self.chat_history = [] # Stores the entire conversation
+        self.chat_history = []  # Stores the entire conversation
         try:
-            self.client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+            self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         except KeyError:
             exit("Ooops! You forgot to set OPENAI_API_KEY in your environment!")
         except Exception as e:
             exit(f"An error occurred while initializing OpenAI client: {e}")
 
-    def chat(self, prompt=""):
-        if not prompt:
-            raise ValueError("Prompt cannot be empty")
+    def chat(self, system_prompt, user_content):
+        """
+        Asks a question using a system prompt and user content, expecting a JSON response.
+        """
+        if not user_content:
+            raise ValueError("User content cannot be empty")
 
-        chat_question = [{"role": "user", "content": prompt}]
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ]
 
         logger.info("Asking ChatGPT a question...")
         completion = self.client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=chat_question
+            messages=messages,
+            response_format={
+                "type": "json_object"
+            },  # This forces the model to return JSON
         )
 
-        # Process the answer
-        openai_answer = completion.choices[0].message.content
+        # Get the raw response
+        raw_response = completion.choices[0].message.content
 
-        # Extract verdict from the last word
         try:
-            last_word = openai_answer.strip().split()[-1].lower().rstrip('.,!?;:')
-            if "verdadeiro" in last_word:
-                veridico = True
-            elif "falso" in last_word:
-                veridico = False
-            else:
-                raise ValueError(f"Could not determine verdict. Last word received: '{last_word}'")
-        except IndexError:
-            raise ValueError("Received an empty or malformed response from OpenAI.")
+            # Parse the JSON response
+            parsed_response = json.loads(raw_response)
+            # Extract the fields
+            analysis = parsed_response.get("lineuzinho", "")
+            is_veridical = parsed_response.get(
+                "veridico", None
+            )  # This will be True or False
 
-        logger.info(f"Response is verdict: {veridico}")
-        return {"lineuzinho": openai_answer, "veridico": veridico}
+            if is_veridical is None:
+                raise ValueError(
+                    "The 'is_veridical' field is missing from the JSON response."
+                )
+
+            # Convert is_veridical to the 'veridico' field as per your original spec.
+            # Note: 'is_veridical' being True means the news is TRUE, so 'veridico' should also be True.
+            veridico = is_veridical
+
+            logger.info(f"Response is verdict: {veridico}")
+            return {"lineuzinho": analysis, "veridico": veridico}
+
+        except json.JSONDecodeError as je:
+            logger.error(f"Failed to parse JSON from OpenAI response: {raw_response}")
+            raise ValueError(f"The model did not return valid JSON: {je}")
+        except Exception as e:
+            logger.error(f"Error processing OpenAI response: {e}")
+            raise ValueError(f"Failed to process the model's response: {e}")
 
 
 # Initialize Flask app and OpenAiManager
 app = Flask(__name__)
 openai_manager = OpenAiManager()
 
-@app.route('/ask', methods=['POST'])
-def ask_chatgpt(prompt: str | None=None):
+
+@app.route("/ask", methods=["POST"])
+def ask_chatgpt():
     """
-    Endpoint to ask a question to ChatGPT.
-    Expects a JSON payload: {"prompt": "Your question here"}
-    Returns a JSON response: {"lineuzinho": "Answer", "veridico": true/false}
+    Endpoint to analyze a news article from a URL.
+    Expects a JSON payload: {"url": "https://example.com/news-article"}
+    Returns a JSON response: {"lineuzinho": "Analysis", "veridico": true/false}
     """
     try:
         data = request.get_json()
-        if not data or 'prompt' not in data:
-            return jsonify({"error": "Missing 'prompt' in JSON request"}), 400
-        if not prompt:
-            prompt = data['prompt']
-            result = openai_manager.chat(prompt)
-        else:
-            print(1)
+        if not data or "url" not in data:
+            return jsonify({"error": "Missing 'url' in JSON request"}), 400
+
+        url = data["url"]
+        logger.info(f"Fetching content from URL: {url}")
+
+        # Extract text from the website
+        extracted_text = extrair_tags_article(url)
+        if not extracted_text:
+            return (
+                jsonify({"error": "Failed to extract content from the provided URL"}),
+                400,
+            )
+
+        # Use the base system prompt and append the extracted text as the user's message.
+        # We pass the full prompt and the user content separately to the chat method.
+        result = openai_manager.chat(
+            system_prompt=BASE_SYSTEM_PROMPT, user_content=extracted_text
+        )
 
         return jsonify(result), 200
 
@@ -93,8 +136,13 @@ def ask_chatgpt(prompt: str | None=None):
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
         logger.error(f"Internal Server Error: {e}")
-        return jsonify({"error": "An internal error occurred while processing your request."}), 500
+        return (
+            jsonify(
+                {"error": "An internal error occurred while processing your request."}
+            ),
+            500,
+        )
 
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
