@@ -4,6 +4,22 @@ import os
 import json
 import logging
 
+PROMPT = {"role": "system", "content": '''
+Você é um especialista em detecção de notícias falsas, com extenso conhecimento em diversas áreas, como política,
+medicina, automóveis, vacinas, etc. Você vai receber notícias dos mais diversos ambitos e sua função é analisa-las
+e baseadas em outras notícias de outras fontes que você terá que pesquisar, você irá me fazer as seguintes coisas:
+1) Indique se essa notícia é possivelmente fake news.
+2) Caso seja fakenews, indique os principais motivos, com referências, dentro da própria notícia. Caso não seja fakenews,
+faça um resumo com as principais informações da notícia
+3) Caso seja fakenews, apresente contrapontos com outras notícias confiáveis.
+4) Dê um score entre 0 a 100% de qual a probabilidade dessa notícia ser fakenews. Entre 0 a 10, fale o quanto essa notícia
+é enviésada.
+5) Termine sua prompt ou com a palavra verdadeiro, caso a noticia, provavelmente, não seja veridica ou com a palavra falso, caso ela seja,
+provavelmente, fake news.
+
+A mensagem segue abaixo:
+'''}
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -54,7 +70,7 @@ app = Flask(__name__)
 openai_manager = OpenAiManager()
 
 @app.route('/ask', methods=['POST'])
-def ask_chatgpt():
+def ask_chatgpt(prompt: str | None=None):
     """
     Endpoint to ask a question to ChatGPT.
     Expects a JSON payload: {"prompt": "Your question here"}
@@ -64,9 +80,11 @@ def ask_chatgpt():
         data = request.get_json()
         if not data or 'prompt' not in data:
             return jsonify({"error": "Missing 'prompt' in JSON request"}), 400
-
-        prompt = data['prompt']
-        result = openai_manager.chat(prompt)
+        if not prompt:
+            prompt = data['prompt']
+            result = openai_manager.chat(prompt)
+        else:
+            print(1)
 
         return jsonify(result), 200
 
