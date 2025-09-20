@@ -1,17 +1,17 @@
-import React from "react";
+import React, { useEffect, useRef } from "react"; // Importar useEffect e useRef
 import styled from "styled-components";
 import Message from "./Message.jsx";
 
 const MessageListWrapper = styled.div`
+  /* Estilos sem alteração */
   flex: 1;
   padding: 20px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  background-color: transparent; // <-- MUDANÇA PRINCIPAL
+  background-color: transparent;
 
-  /* Estilizando a barra de rolagem para combinar */
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -21,19 +21,27 @@ const MessageListWrapper = styled.div`
   }
 `;
 
-function MessageList() {
-  const messages = [
-    { text: "E aí, tudo certo?", sent: false },
-    { text: "Opa, tudo joia! Gostou do novo fundo líquido?", sent: true },
-    { text: "Nossa, ficou sensacional! Parece vivo.", sent: false },
-    { text: "A ideia era essa! Fica mais dinâmico, né?", sent: true },
-  ];
+// 1. Receber 'messages' via props
+function MessageList({ messages }) {
+  // Hook para auto-scroll
+  const endOfMessagesRef = useRef(null);
+
+  const scrollToBottom = () => {
+    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]); // Roda sempre que a lista de mensagens mudar
 
   return (
     <MessageListWrapper>
+      {/* 2. Mapear a lista recebida */}
       {messages.map((msg, index) => (
         <Message key={index} text={msg.text} sent={msg.sent} />
       ))}
+      {/* Elemento invisível no final da lista para o scroll */}
+      <div ref={endOfMessagesRef} />
     </MessageListWrapper>
   );
 }

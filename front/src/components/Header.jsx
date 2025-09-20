@@ -2,6 +2,9 @@ import React from "react";
 import styled from "styled-components";
 import { FiChevronLeft, FiMoreVertical } from "react-icons/fi";
 
+// 1. Importe a imagem como uma variável
+import avatarImage from "../assets/alexandre-de-moraes-1024x682.jpg";
+
 const HeaderWrapper = styled.header`
   display: flex;
   align-items: center;
@@ -49,12 +52,9 @@ function Header() {
     <HeaderWrapper>
       <UserInfo>
         <FiChevronLeft size={28} />
-        {/* Usando uma imagem de avatar de exemplo */}
-        <Avatar
-          src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
-          alt="Avatar"
-        />
-        <UserName>Nome da Pessoa</UserName> {/* */}
+        {/* 2. Use a variável importada no 'src' */}
+        <Avatar src={avatarImage} alt="Avatar do Alexandre de Moraes" />
+        <UserName>Alexandre de Moraes ❤️</UserName>
       </UserInfo>
       <Actions>
         <FiMoreVertical />
