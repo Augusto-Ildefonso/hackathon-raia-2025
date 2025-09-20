@@ -68,29 +68,6 @@ class OpenAiManager:
 
         logger.info("Asking ChatGPT a question, allowing tool use...")
 
-        # Initial request, allowing the model to decide if it needs to use a tool
-        # response = self.client.chat.completions.create(
-        #     model="gpt-4o-mini",
-        #     messages=messages,
-        #     tools=[{"type": "browser"}],  # Enable the browser tool
-        #     tool_choice="auto",  # Let the model decide if it needs to use a tool
-        # )
-
-        # Check if the model wants to use a tool
-        # while response.choices[0].finish_reason == "tool_calls":
-        #     tool_calls = response.choices[0].message.tool_calls
-        #     messages.append(
-        #         response.choices[0].message
-        #     )  # Add the model's request to use a tool to the history
-
-        #     for tool_call in tool_calls:
-        #         if tool_call.type == "browser":
-        #             # The model wants to browse. The OpenAI API handles the actual browsing.
-        #             # We just need to append the tool's result back to the messages.
-        #             # The result will be in `tool_call.result` after the API processes it.
-        #             # For the `browser` tool, OpenAI handles the execution internally.
-        #             pass  # In this case, we don't need to do anything; the result is handled by the API.
-
         # Manda as mensagens para o GPT-4 com pesquisa na web.
         response = self.client.chat.completions.create(
             model="gpt-4o-mini-search-preview",
@@ -110,13 +87,6 @@ class OpenAiManager:
         logger.info(f"Response is verdict: {veridico}")
         print(parsed_response)
         return {"lineuzinho": analysis, "veridico": veridico}
-
-        # except json.JSONDecodeError as je:
-        #     logger.error(f"Failed to parse JSON from OpenAI response: {raw_response}")
-        #     raise ValueError(f"The model did not return valid JSON: {je}")
-        # except Exception as e:
-        #     logger.error(f"Error processing OpenAI response: {e}")
-        #     raise ValueError(f"Failed to process the model's response: {e}")
 
 
 # Inicializa o Flask
