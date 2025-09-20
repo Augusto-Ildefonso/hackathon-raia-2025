@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import io from 'socket.io-client';
 
 const SocketContext = createContext();
 
@@ -16,11 +16,13 @@ export const SocketProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [userId, setUserId] = useState(null);
+  
+  // UseRef para manter controle das mensagens já processadas
+  const processedMessagesRef = useRef(new Set());
 
   useEffect(() => {
     // Conectar ao servidor Socket.IO
-    // Ajuste a URL conforme necessário
-    const newSocket = io('http://localhost:3001', {
+    const newSocket = io('http://localhost:3000', {
       transports: ['websocket']
     });
 
@@ -36,22 +38,62 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('disconnect', () => {
       console.log('Desconectado do servidor');
       setIsConnected(false);
+      setUserId(null);
     });
 
-    // Escutar mensagens recebidas
-    newSocket.on('message', (messageData) => {
-      console.log('Mensagem recebida:', messageData);
-      setMessages(prevMessages => [...prevMessages, messageData]);
-    });
+    // SOLUÇÃO ANTI-DUPLICAÇÃO
+    const handleChatMessage = (data) => {
+      console.log('Mensagem recebida:', data);
+      
+      // Criar ID único baseado em múltiplos fatores
+      const messageKey = `${data.senderId || 'unknown'}-${data.timestamp}-${(data.message || '').substring(0, 30)}`;
+      
+      // Verificar se já processamos esta mensagem
+      if (processedMessagesRef.current.has(messageKey)) {
+        console.log('Mensagem duplicada ignorada:', messageKey);
+        return;
+      }
+      
+      // Marcar como processada
+      processedMessagesRef.current.add(messageKey);
+      
+      // Limpar cache antigo (manter só as últimas 50)
+      if (processedMessagesRef.current.size > 50) {
+        const keys = Array.from(processedMessagesRef.current);
+        processedMessagesRef.current.clear();
+        keys.slice(-25).forEach(key => processedMessagesRef.current.add(key));
+      }
+      
+      // Criar objeto da mensagem
+      const messageData = {
+        id: messageKey,
+        text: data.message || data,
+        userId: data.senderId || 'server',
+        timestamp: data.timestamp || new Date().toISOString(),
+        sent: data.senderId === newSocket.id,
+        hasUrl: data.hasUrl || false
+      };
 
-    // Escutar mensagens do histórico (caso o servidor envie)
-    newSocket.on('messageHistory', (history) => {
-      console.log('Histórico de mensagens:', history);
-      setMessages(history);
-    });
+      // Adicionar mensagem ao estado
+      setMessages(prevMessages => {
+        // Verificação extra: não adicionar se já existe uma mensagem com mesmo ID
+        const exists = prevMessages.some(msg => msg.id === messageData.id);
+        if (exists) {
+          console.log('Mensagem já existe no estado, ignorando');
+          return prevMessages;
+        }
+        
+        console.log('Adicionando nova mensagem:', messageData.text);
+        return [...prevMessages, messageData];
+      });
+    };
 
-    // Cleanup na desmontagem
+    // Registrar listener
+    newSocket.on('chat message', handleChatMessage);
+
+    // Cleanup
     return () => {
+      newSocket.off('chat message', handleChatMessage);
       newSocket.close();
     };
   }, []);
@@ -59,43 +101,30 @@ export const SocketProvider = ({ children }) => {
   // Função para enviar mensagem
   const sendMessage = (messageText) => {
     if (socket && messageText.trim()) {
-      const messageData = {
-        text: messageText,
-        userId: userId,
-        timestamp: new Date().toISOString(),
-        sent: true
-      };
-
-      // Enviar mensagem para o servidor
-      socket.emit('message', messageData);
+      console.log('Enviando mensagem:', messageText);
       
-      // Adicionar mensagem localmente (otimistic update)
-      setMessages(prevMessages => [...prevMessages, messageData]);
-      
-      console.log('Mensagem enviada:', messageData);
+      // Não adicionar mensagem local - aguardar resposta do servidor
+      socket.emit('chat message', messageText);
     }
   };
 
-  // Função para entrar em uma sala específica (se necessário)
-  const joinRoom = (roomId) => {
-    if (socket) {
-      socket.emit('joinRoom', roomId);
-      console.log('Entrando na sala:', roomId);
-    }
+  // Função para limpar chat
+  const clearMessages = () => {
+    setMessages([]);
+    processedMessagesRef.current.clear();
   };
 
-  const contextValue = {
+  const value = {
     socket,
     messages,
     isConnected,
     userId,
     sendMessage,
-    joinRoom,
-    setMessages
+    clearMessages
   };
 
   return (
-    <SocketContext.Provider value={contextValue}>
+    <SocketContext.Provider value={value}>
       {children}
     </SocketContext.Provider>
   );

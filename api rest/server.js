@@ -22,7 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI;
 // URL para seu próprio microserviço de verificação
-const API_VERIFICATION_URL = `http://localhost:6969/ia/verification`;
+const API_VERIFICATION_URL = `http://172.16.21.149:5000/ask`;
 
 
 // --- 2. MIDDLEWARES E ROTAS ---
@@ -71,7 +71,7 @@ io.on('connection', (socket) => {
 
     // Escuta por mensagens do chat
     socket.on('chat message', async (originalMessage) => {
-        console.log(`Mensagem recebida: "${originalMessage}"`);
+        console.log(`Mensagem recebida de ${socket.id}: "${originalMessage}"`);
         const urlFound = findUrlInText(originalMessage);
         let finalMessage = originalMessage;
 
@@ -80,20 +80,48 @@ io.on('connection', (socket) => {
             console.log(`Link encontrado: ${urlFound}. Verificando...`);
             try {
                 const response = await axios.post(API_VERIFICATION_URL, {
-                    message: originalMessage,
                     url: urlFound
                 });
-                // A mensagem final será a que sua API retornou
-                finalMessage = response.data.finalMessage;
+                
+                console.log('Resposta completa da API:', response.data);
+                
+                // Extrai os campos corretos da resposta
+                const { lineuzinho, veridico } = response.data;
+                
+                if (lineuzinho) {
+                    // Adiciona um emoji baseado na veracidade
+                    const statusEmoji = veridico ? '✅' : '❌';
+                    finalMessage = `${statusEmoji} ${lineuzinho}`;
+                } else {
+                    console.warn('Campo "lineuzinho" não encontrado na resposta da API');
+                    finalMessage = `${originalMessage} (⚠️ Resposta da API inválida)`;
+                }
+                
                 console.log(`Mensagem processada pela IA: "${finalMessage}"`);
+                console.log(`Veracidade do link: ${veridico ? 'Verdadeiro' : 'Falso'}`);
+                
             } catch (error) {
                 console.error("Erro ao verificar mensagem com a API:", error.message);
+                if (error.response) {
+                    console.error("Dados de erro da API:", error.response.data);
+                }
                 finalMessage = `${originalMessage} (⚠️ Verificação falhou)`;
             }
         }
         
+        // Garantir que finalMessage nunca seja undefined, null ou vazio
+        if (!finalMessage || finalMessage === 'undefined' || finalMessage === 'null') {
+            finalMessage = originalMessage || 'Mensagem vazia';
+        }
+        
         // Transmite a mensagem final para todos os clientes conectados
-        io.emit('chat message', finalMessage);
+        io.emit('chat message', {
+            message: finalMessage,
+            senderId: socket.id,
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log(`Mensagem enviada para todos os clientes: "${finalMessage}"`);
     });
 });
 
