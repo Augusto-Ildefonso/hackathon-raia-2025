@@ -31,6 +31,6 @@ def extrair_tags_article(url: str):
 
 
 if __name__ == "__main__":
-    url_alvo = 'https://www.cnnbrasil.com.br/politica/brasil-nao-pode-continuar-refem-da-agenda-da-anistia-diz-aecio-neves-ao-ww/'
+    url_alvo = input("Insira a URL: ")
     
     extrair_tags_article(url_alvo)
