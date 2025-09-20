@@ -2,9 +2,6 @@ import React from "react";
 import styled from "styled-components";
 import { FiChevronLeft, FiMoreVertical } from "react-icons/fi";
 
-// 1. Importe a imagem como uma variável
-import avatarImage from "../assets/alexandre-de-moraes-1024x682.jpg";
-
 const HeaderWrapper = styled.header`
   display: flex;
   align-items: center;
@@ -16,13 +13,11 @@ const HeaderWrapper = styled.header`
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 `;
-
 const UserInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 15px;
 `;
-
 const Avatar = styled.img`
   width: 45px;
   height: 45px;
@@ -30,31 +25,25 @@ const Avatar = styled.img`
   border: 2px solid #e94560;
   object-fit: cover;
 `;
-
 const UserName = styled.span`
   font-size: 1.3rem;
   font-weight: 500;
 `;
-
 const Actions = styled.div`
   font-size: 1.5rem;
   cursor: pointer;
-  transition: transform 0.2s ease-in-out;
-
-  &:hover {
-    transform: scale(1.2);
-    color: #e94560;
-  }
 `;
 
-function Header() {
+function Header({ user }) {
+  // Se o usuário não for carregado ainda, não quebra
+  if (!user) return null;
+
   return (
     <HeaderWrapper>
       <UserInfo>
         <FiChevronLeft size={28} />
-        {/* 2. Use a variável importada no 'src' */}
-        <Avatar src={avatarImage} alt="Avatar do Alexandre de Moraes" />
-        <UserName>Alexandre de Moraes ❤️</UserName>
+        <Avatar src={user.avatar} alt={`Avatar de ${user.name}`} />
+        <UserName>{user.name}</UserName>
       </UserInfo>
       <Actions>
         <FiMoreVertical />
