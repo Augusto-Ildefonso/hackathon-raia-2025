@@ -27,10 +27,14 @@ npm install
 npm install express
 npm install axios
 ```
+
 ### Para a conexão com a IA (`chatbot`):
+
 ```bash
 pip install -r requirements.txt
 python openai_chat.py
 ```
+
+É também necessário um `.env` com a chave do openAI.
 
 
