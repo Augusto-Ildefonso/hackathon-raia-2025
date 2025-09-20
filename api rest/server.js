@@ -88,16 +88,22 @@ io.on('connection', (socket) => {
                 // Extrai os campos corretos da resposta
                 const { lineuzinho, veridico } = response.data;
                 
-                if (lineuzinho) {
-                    // Adiciona um emoji baseado na veracidade
-                    const statusEmoji = veridico ? '✅' : '❌';
-                    finalMessage = `${statusEmoji} ${lineuzinho}`;
+                if (veridico) {
+                    // Se a notícia é verídica, mantém a mensagem original
+                    finalMessage = originalMessage;
+                    console.log(`Notícia verídica - mantendo mensagem original`);
                 } else {
-                    console.warn('Campo "lineuzinho" não encontrado na resposta da API');
-                    finalMessage = `${originalMessage} (⚠️ Resposta da API inválida)`;
+                    // Se a notícia é falsa, usa a mensagem do GPT
+                    if (lineuzinho) {
+                        finalMessage = `❌ ${lineuzinho}`;
+                        console.log(`Notícia falsa - usando resposta do GPT`);
+                    } else {
+                        console.warn('Campo "lineuzinho" não encontrado na resposta da API');
+                        finalMessage = `❌ ${originalMessage} (Notícia não verificada - resposta da API inválida)`;
+                    }
                 }
                 
-                console.log(`Mensagem processada pela IA: "${finalMessage}"`);
+                console.log(`Mensagem processada: "${finalMessage}"`);
                 console.log(`Veracidade do link: ${veridico ? 'Verdadeiro' : 'Falso'}`);
                 
             } catch (error) {
