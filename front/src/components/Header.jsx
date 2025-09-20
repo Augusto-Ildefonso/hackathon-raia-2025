@@ -1,9 +1,8 @@
 import React from "react";
 import styled from "styled-components";
 import { FiChevronLeft, FiMoreVertical } from "react-icons/fi";
-
-// 1. Importe a imagem como uma variável
-import avatarImage from "../assets/alexandre-de-moraes-1024x682.jpg";
+// Importamos o ícone que será nosso avatar padrão
+import { FaUserCircle } from "react-icons/fa";
 
 const HeaderWrapper = styled.header`
   display: flex;
@@ -23,12 +22,15 @@ const UserInfo = styled.div`
   gap: 15px;
 `;
 
-const Avatar = styled.img`
+// Não precisamos mais do <Avatar> de imagem, apenas do placeholder
+const AvatarPlaceholder = styled.div`
   width: 45px;
   height: 45px;
-  border-radius: 50%;
-  border: 2px solid #e94560;
-  object-fit: cover;
+  font-size: 45px; /* Tamanho do ícone */
+  color: #a9a9b3; /* Cor cinza para o ícone */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const UserName = styled.span`
@@ -47,14 +49,20 @@ const Actions = styled.div`
   }
 `;
 
+// O componente agora não recebe mais nenhuma propriedade (props)
 function Header() {
   return (
     <HeaderWrapper>
       <UserInfo>
         <FiChevronLeft size={28} />
-        {/* 2. Use a variável importada no 'src' */}
-        <Avatar src={avatarImage} alt="Avatar do Alexandre de Moraes" />
-        <UserName>Alexandre de Moraes ❤️</UserName>
+
+        {/* Mostra sempre o ícone de avatar genérico */}
+        <AvatarPlaceholder>
+          <FaUserCircle />
+        </AvatarPlaceholder>
+
+        {/* Mostra sempre um nome de usuário fixo */}
+        <UserName>Usuário</UserName>
       </UserInfo>
       <Actions>
         <FiMoreVertical />
